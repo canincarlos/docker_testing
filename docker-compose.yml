@@ -1,0 +1,41 @@
+version: "3.9"
+
+# https://www.youtube.com/watch?v=e63EBEFJkH0
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  server:
+    build:
+      context: ./django
+    # command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn server.wsgi --bind 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+  client:
+    build:
+      context: ./react/blogapi
+    volumes: 
+      - react_build:/react/build
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:8080
+    volumes:
+      - ./nginx/nginx-setup.conf:/etc/nginx/conf.d/default.conf:ro
+      - react_build:/var/www/react
+    depends_on:
+      - server
+      - client
+volumes:
+  react_build:
